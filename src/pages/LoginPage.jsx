@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { login } from '../api'
 
 export default function LoginPage() {
@@ -20,7 +20,9 @@ export default function LoginPage() {
       setError(
         err.message === 'Access denied — authority accounts only'
           ? err.message
-          : err.response?.data?.detail || 'Login failed. Check your credentials.'
+          : err.response?.data?.error?.message ||
+            err.response?.data?.detail ||
+            'Login failed. Check your credentials.'
       )
     } finally {
       setLoading(false)
@@ -57,6 +59,14 @@ export default function LoginPage() {
         </button>
 
         {error && <div className="error">{error}</div>}
+
+        <div style={{ textAlign: 'center', marginTop: 16, borderTop: '1px solid #2a3f52', paddingTop: 16 }}>
+          <span style={{ color: '#90a4ae', fontSize: 13 }}>New authority? </span>
+          <Link to="/register"
+            style={{ color: '#4fc3f7', fontSize: 13, textDecoration: 'none', fontWeight: 600 }}>
+            Register here
+          </Link>
+        </div>
       </form>
     </div>
   )

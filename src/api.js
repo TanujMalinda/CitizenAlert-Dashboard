@@ -23,11 +23,17 @@ api.interceptors.response.use(
 // ── Auth ──────────────────────────────────────────────────────────
 export async function login(email, password) {
   const res = await api.post('/auth/login', { email, password })
-  if (res.data.user.role !== 'authority') {
+  if (!['authority', 'super_admin'].includes(res.data.user.role)) {
     throw new Error('Access denied — authority accounts only')
   }
   localStorage.setItem('jwt_token', res.data.token)
   localStorage.setItem('user_name', res.data.user.full_name)
+  localStorage.setItem('user_role', res.data.user.role)
+  return res.data
+}
+
+export async function registerAuthority(data) {
+  const res = await api.post('/auth/register-authority', data)
   return res.data
 }
 
@@ -49,18 +55,21 @@ export const getPending = () => api.get('/authority/pending').then(r => r.data)
 export const getAlerts  = (params) => api.get('/authority/alerts', { params }).then(r => r.data)
 export const getTvmLog  = (params) => api.get('/authority/tvm-log', { params }).then(r => r.data)
 
-// ── Review actions (per alert type) ───────────────────────────────
+// ── Review actions ────────────────────────────────────────────────
 export function reviewAlert(alertType, alertId, action, notes) {
-  if (alertType === 'crime') {
-    return api.post(`/crime-reports/${alertId}/review`, { action, notes })
-  }
-  if (alertType === 'health') {
-    return api.post(`/public-health/${alertId}/review`, { action, notes })
-  }
-  // missing_person / traffic pending items are resolved via their own routes;
-  // for review queue purposes treat verify/reject via crime-style review when available
-  return Promise.reject(new Error(`No review endpoint for type: ${alertType}`))
+  // Unified authority review endpoint handles all alert types
+  return api.post(`/authority/alerts/${alertId}/review`, { action, notes })
 }
+
+// ── Authority Registration Management (super_admin only) ──────────
+export const getRegistrations = (status = 'pending_approval') =>
+  api.get('/authority/registrations', { params: { status } }).then(r => r.data)
+
+export const approveRegistration = (userId, notes) =>
+  api.post(`/authority/registrations/${userId}/approve`, { notes }).then(r => r.data)
+
+export const rejectRegistration = (userId, notes) =>
+  api.post(`/authority/registrations/${userId}/reject`, { notes }).then(r => r.data)
 
 export function resolveAlert(alertType, alertId) {
   if (alertType === 'crime') {
