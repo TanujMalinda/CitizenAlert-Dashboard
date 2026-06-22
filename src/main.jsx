@@ -10,6 +10,7 @@ import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
 import ReviewQueuePage from './pages/ReviewQueuePage'
 import AlertsPage from './pages/AlertsPage'
+import HeatmapPage from './pages/HeatmapPage'
 import TvmLogPage from './pages/TvmLogPage'
 import RegistrationsPage from './pages/RegistrationsPage'
 
@@ -27,6 +28,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/" element={<DashboardPage />} />
           <Route path="/review" element={<ReviewQueuePage />} />
           <Route path="/alerts" element={<AlertsPage />} />
+          <Route path="/heatmap" element={<HeatmapPage />} />
           <Route path="/tvm-log" element={<TvmLogPage />} />
           <Route path="/registrations" element={<RegistrationsPage />} />
         </Route>

@@ -154,6 +154,26 @@ tr:hover td { background: rgba(79, 195, 247, 0.04); }
 .login-box .btn { width: 100%; margin-top: 22px; padding: 13px; font-size: 15px; }
 .login-box .error { color: var(--danger); font-size: 13px; text-align: center; margin-top: 14px; }
 
+/* ── Heatmap ── */
+.map-container {
+  width: 100%;
+  height: calc(100vh - 230px);
+  min-height: 420px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--panel-2);
+}
+.map-count { color: var(--muted); font-size: 13px; align-self: center; }
+.map-legend {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  margin-top: 14px; color: var(--muted); font-size: 12px;
+}
+.legend-item { display: flex; align-items: center; gap: 6px; text-transform: capitalize; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+/* Leaflet popups on the dark theme */
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--panel); color: var(--text); }
+.leaflet-popup-content { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 12px; }
+
 /* ── Misc ── */
 .empty { padding: 40px; text-align: center; color: var(--muted); }
 .desc { color: var(--muted); font-size: 12px; max-width: 360px; }

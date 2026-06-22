@@ -27,6 +27,7 @@ export default function Layout() {
           <NavLink to="/" end>📊 Overview</NavLink>
           <NavLink to="/review">⚖️ Review Queue</NavLink>
           <NavLink to="/alerts">🗂️ All Alerts</NavLink>
+          <NavLink to="/heatmap">🗺️ Heatmap</NavLink>
           <NavLink to="/tvm-log">📜 TVM Audit Log</NavLink>
           {superAdmin && (
             <NavLink to="/registrations">👤 Registrations</NavLink>
