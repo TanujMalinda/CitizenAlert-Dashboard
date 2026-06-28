@@ -12,6 +12,7 @@ export default function AlertsPage() {
   const [alerts, setAlerts] = useState(null)
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(null)
+  const [photo, setPhoto] = useState(null) // photo URL shown in lightbox
   const [filters, setFilters] = useState({ alert_type: '', status: '', tvm_status: '' })
 
   function load() {
@@ -95,8 +96,24 @@ export default function AlertsPage() {
                   <td>#{a.id}</td>
                   <td><span className="badge type">{a.alert_type}</span></td>
                   <td>
-                    <strong>{a.title}</strong>
-                    <div className="desc">{a.description}</div>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                      {a.photo_url && (
+                        <img
+                          src={a.photo_url}
+                          alt="reported person"
+                          onClick={() => setPhoto(a.photo_url)}
+                          style={{
+                            width: 44, height: 44, borderRadius: 8,
+                            objectFit: 'cover', cursor: 'pointer',
+                            border: '1px solid #2a3f52', flexShrink: 0,
+                          }}
+                        />
+                      )}
+                      <div>
+                        <strong>{a.title}</strong>
+                        <div className="desc">{a.description}</div>
+                      </div>
+                    </div>
                   </td>
                   <td><span className={`badge ${a.severity}`}>{a.severity}</span></td>
                   <td><span className={`badge ${a.status}`}>{a.status}</span></td>
@@ -119,6 +136,27 @@ export default function AlertsPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {photo && (
+        <div
+          onClick={() => setPhoto(null)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1000, cursor: 'zoom-out',
+          }}
+        >
+          <img
+            src={photo}
+            alt="reported person"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: '90vw', maxHeight: '90vh', borderRadius: 12,
+              boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
+            }}
+          />
         </div>
       )}
     </>
