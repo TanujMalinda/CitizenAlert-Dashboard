@@ -61,6 +61,11 @@ export function reviewAlert(alertType, alertId, action, notes) {
   return api.post(`/authority/alerts/${alertId}/review`, { action, notes })
 }
 
+// Set/clear an alert's CAP-style affected area.
+// payload: { mode: 'polygon'|'line_buffer'|'clear', coordinates: [[lat,lng],...], buffer_m }
+export const setAlertArea = (alertId, payload) =>
+  api.post(`/authority/alerts/${alertId}/area`, payload).then(r => r.data)
+
 // ── Authority Registration Management (super_admin only) ──────────
 export const getRegistrations = (status = 'pending_approval') =>
   api.get('/authority/registrations', { params: { status } }).then(r => r.data)

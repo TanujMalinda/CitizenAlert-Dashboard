@@ -9,6 +9,7 @@ export default function ReviewQueuePage() {
   const [busy, setBusy] = useState(null) // alert id being acted on
   const [notesFor, setNotesFor] = useState(null) // { id, type, action }
   const [notes, setNotes] = useState('')
+  const [photo, setPhoto] = useState(null) // photo URL shown in lightbox
 
   function load() {
     getPending().then((r) => setItems(r.data)).catch((e) =>
@@ -79,10 +80,26 @@ export default function ReviewQueuePage() {
                   <td>#{item.id}</td>
                   <td><span className="badge type">{item.alert_type}</span></td>
                   <td>
-                    <strong>{item.title}</strong>
-                    <div className="desc">{item.description}</div>
-                    <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
-                      📍 {item.latitude?.toFixed(4)}, {item.longitude?.toFixed(4)}
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                      {item.photo_url && (
+                        <img
+                          src={item.photo_url}
+                          alt="evidence"
+                          onClick={() => setPhoto(item.photo_url)}
+                          style={{
+                            width: 48, height: 48, borderRadius: 8,
+                            objectFit: 'cover', cursor: 'pointer',
+                            border: '1px solid #2a3f52', flexShrink: 0,
+                          }}
+                        />
+                      )}
+                      <div>
+                        <strong>{item.title}</strong>
+                        <div className="desc">{item.description}</div>
+                        <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
+                          📍 {item.latitude?.toFixed(4)}, {item.longitude?.toFixed(4)}
+                        </div>
+                      </div>
                     </div>
                   </td>
                   <td><span className={`badge ${item.severity}`}>{item.severity}</span></td>
@@ -148,6 +165,27 @@ export default function ReviewQueuePage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {photo && (
+        <div
+          onClick={() => setPhoto(null)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1000, cursor: 'zoom-out',
+          }}
+        >
+          <img
+            src={photo}
+            alt="evidence"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: '90vw', maxHeight: '90vh', borderRadius: 12,
+              boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
+            }}
+          />
         </div>
       )}
     </>
