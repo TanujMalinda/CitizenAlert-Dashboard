@@ -196,3 +196,70 @@ tr:hover td { background: rgba(79, 195, 247, 0.04); }
   color: var(--text); padding: 10px; border-radius: 8px; font-size: 13px;
 }
 .modal .actions { margin-top: 20px; display: flex; justify-content: flex-end; }
+
+/* ── Charts (Overview) ─────────────────────────────────────────────── */
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.chart-card {
+  background: var(--panel);
+  border-radius: 14px;
+  padding: 18px 20px;
+  min-width: 0;
+}
+.chart-card.wide { grid-column: 1 / -1; }
+.chart-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+.chart-note { color: var(--muted); font-weight: 400; font-size: 12px; }
+.chart-empty {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 28px 0;
+  text-align: center;
+}
+
+/* Line chart */
+.line-chart { width: 100%; height: auto; display: block; }
+.axis-label { fill: var(--muted); font-size: 11px; }
+
+/* Donut + legend */
+.donut-wrap { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.donut-total { fill: var(--text); font-size: 26px; font-weight: 700; }
+.donut-caption { fill: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+.chart-legend { list-style: none; display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 130px; }
+.chart-legend li { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.legend-swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+.legend-label { color: var(--muted); flex: 1; }
+.legend-val { font-weight: 600; }
+
+/* Horizontal bars */
+.hbar-chart { display: flex; flex-direction: column; gap: 10px; }
+.hbar-row { display: grid; grid-template-columns: 100px 1fr 34px; align-items: center; gap: 10px; }
+.hbar-label {
+  font-size: 12px; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hbar-track { background: var(--panel-2); border-radius: 6px; height: 16px; overflow: hidden; }
+.hbar-fill { height: 100%; border-radius: 6px; transition: width .3s ease; min-width: 2px; }
+.hbar-value { font-size: 13px; font-weight: 600; text-align: right; }
+
+@media (max-width: 900px) {
+  .chart-grid { grid-template-columns: 1fr; }
+}
+
+/* Pulsing highlight for the alert selected in the affected-area editor */
+.focus-pulse {
+  animation: focusPulse 1.4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes focusPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}

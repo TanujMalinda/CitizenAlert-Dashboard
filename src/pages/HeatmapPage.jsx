@@ -25,6 +25,23 @@ const SEVERITY_WEIGHT = {
 
 const ALERT_TYPES = ['missing_person', 'disaster', 'crime', 'traffic', 'health']
 
+// Severity-default affect range in km — mirrors backend core/geo.py, so alerts
+// saved before the geo migration (NULL radius) still get a circle like mobile.
+// missing_person: no area — a person is not a zone.
+const DEFAULT_RADIUS_KM = {
+  disaster: { extreme: 5.0, severe: 3.0, medium: 1.5, low: 0.5 },
+  health:   { extreme: 10.0, severe: 5.0, medium: 3.0, low: 1.0 },
+  traffic:  { extreme: 1.0, severe: 0.7, medium: 0.4, low: 0.4 },
+  crime:    { extreme: 0.4, severe: 0.4, medium: 0.4, low: 0.4 },
+}
+
+function affectRangeKm(a) {
+  if (a.affected_radius_km) return Number(a.affected_radius_km)
+  const bySev = DEFAULT_RADIUS_KM[a.alert_type]
+  if (!bySev) return null
+  return bySev[a.severity] ?? bySev.medium
+}
+
 export default function HeatmapPage() {
   const mapEl      = useRef(null)
   const mapRef     = useRef(null)
@@ -32,6 +49,7 @@ export default function HeatmapPage() {
   const markersRef = useRef(null)
   const areasRef   = useRef(null)
   const editRef    = useRef(null)
+  const focusRef   = useRef(null)
 
   const [alerts, setAlerts]           = useState(null)
   const [error, setError]             = useState(null)
@@ -64,6 +82,7 @@ export default function HeatmapPage() {
     areasRef.current   = L.layerGroup().addTo(map)
     markersRef.current = L.layerGroup().addTo(map)
     editRef.current    = L.layerGroup().addTo(map)
+    focusRef.current   = L.layerGroup().addTo(map)
     mapRef.current = map
     setTimeout(() => map.invalidateSize(), 100)
     return () => { map.remove(); mapRef.current = null }
@@ -142,11 +161,14 @@ export default function HeatmapPage() {
               style: { color, weight: 1.5, fillColor: color, fillOpacity: 0.15 },
             }).addTo(areasRef.current)
           } catch { /* bad geometry — skip */ }
-        } else if (a.affected_radius_km) {
-          L.circle([a.latitude, a.longitude], {
-            radius: a.affected_radius_km * 1000,
-            color, weight: 1.2, fillColor: color, fillOpacity: 0.10,
-          }).addTo(areasRef.current)
+        } else {
+          const rangeKm = affectRangeKm(a)
+          if (rangeKm) {
+            L.circle([a.latitude, a.longitude], {
+              radius: rangeKm * 1000,
+              color, weight: 1.2, opacity: 0.5, fillColor: color, fillOpacity: 0.12,
+            }).addTo(areasRef.current)
+          }
         }
       })
     }
@@ -156,6 +178,12 @@ export default function HeatmapPage() {
     if (showMarkers) {
       visible.forEach((a) => {
         const color = TYPE_COLORS[a.alert_type] || '#90A4AE'
+        const rangeKm = affectRangeKm(a)
+        const areaLine = a.affected_geojson
+          ? 'Affected: marked zone'
+          : rangeKm
+            ? `Affected: ~${rangeKm.toFixed(1)} km radius`
+            : ''
         L.circleMarker([a.latitude, a.longitude], {
           radius: 5, color, fillColor: color, fillOpacity: 0.85, weight: 1,
         })
@@ -163,7 +191,8 @@ export default function HeatmapPage() {
             `<strong>${a.title || 'Alert'}</strong><br/>` +
             `${a.alert_type} · ${a.severity || '—'}<br/>` +
             `${a.district || ''}<br/>` +
-            `TVM: ${a.tvm_status || '—'}`
+            `TVM: ${a.tvm_status || '—'}` +
+            (areaLine ? `<br/>${areaLine}` : '')
           )
           .addTo(markersRef.current)
       })
@@ -171,12 +200,27 @@ export default function HeatmapPage() {
   }, [alerts, typeFilter, showMarkers, showAreas])
 
   // ── Editor actions ───────────────────────────────────────────────
+  // Fly to the chosen alert and drop a pulsing highlight so it stands out.
+  function focusAlert(id) {
+    const map = mapRef.current
+    const g   = focusRef.current
+    if (!map || !g) return
+    g.clearLayers()
+    if (!id) return
+    const a = alerts?.find((x) => x.id === Number(id))
+    if (!a || a.latitude == null || a.longitude == null) return
+    map.flyTo([a.latitude, a.longitude], 14, { duration: 0.8 })
+    L.circleMarker([a.latitude, a.longitude], {
+      radius: 14, color: '#4FC3F7', weight: 3, fillColor: '#4FC3F7',
+      fillOpacity: 0.15, className: 'focus-pulse',
+    }).addTo(g)
+  }
+
   function startEditing() {
     if (!editAlertId) return
     setEditPoints([])
     setEditing(true)
-    const a = alerts?.find((x) => x.id === Number(editAlertId))
-    if (a && mapRef.current) mapRef.current.setView([a.latitude, a.longitude], 13)
+    focusAlert(editAlertId)
   }
 
   function cancelEditing() {
@@ -253,7 +297,7 @@ export default function HeatmapPage() {
         <span style={{ fontSize: 13, color: '#90A4AE' }}>Edit affected area:</span>
         <select
           value={editAlertId}
-          onChange={(e) => { setEditAlertId(e.target.value); cancelEditing() }}
+          onChange={(e) => { setEditAlertId(e.target.value); cancelEditing(); focusAlert(e.target.value) }}
         >
           <option value="">Select alert…</option>
           {activeAlerts.map((a) => (
