@@ -74,15 +74,36 @@ export default function HeatmapPage() {
   // ── Initialise the map once ──────────────────────────────────────
   useEffect(() => {
     if (mapRef.current) return
-    const map = L.map(mapEl.current, { center: SL_CENTER, zoom: 8 })
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-      maxZoom: 19,
-    }).addTo(map)
+    // Free, no-key base layers. Esri imagery/topo use {z}/{y}/{x} ordering.
+    const street = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors', maxZoom: 19,
+    })
+    const satellite = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { attribution: 'Imagery © Esri', maxZoom: 19 })
+    const terrain = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+      { attribution: 'Topo © Esri', maxZoom: 19 })
+    const dark = L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+      { attribution: '© OpenStreetMap, © CARTO', subdomains: 'abcd', maxZoom: 19 })
+
+    const map = L.map(mapEl.current, {
+      center: SL_CENTER, zoom: 8, layers: [street],
+    })
+
     areasRef.current   = L.layerGroup().addTo(map)
     markersRef.current = L.layerGroup().addTo(map)
     editRef.current    = L.layerGroup().addTo(map)
     focusRef.current   = L.layerGroup().addTo(map)
+
+    // Layer control: switch base map, toggle incident overlays.
+    L.control.layers(
+      { Street: street, Satellite: satellite, Terrain: terrain, Dark: dark },
+      { 'Affected areas': areasRef.current, 'Alert markers': markersRef.current },
+      { position: 'topright', collapsed: false },
+    ).addTo(map)
+
     mapRef.current = map
     setTimeout(() => map.invalidateSize(), 100)
     return () => { map.remove(); mapRef.current = null }
