@@ -8,6 +8,18 @@ const TVM_STATUSES = [
   'pending_authority_review', 'pending_consensus', 'rejected',
 ]
 
+// Turn a raw tvm_log action ("authority_rejectd", "tier1_failed") into a label.
+function reviewOutcome(a) {
+  const act = (a.review_action || '').toLowerCase()
+  if (a.tvm_status === 'rejected' || act.includes('reject') || act.includes('fail'))
+    return { label: 'Rejected', cls: 'rejected' }
+  if (['verified', 'passed'].includes(a.tvm_status) || act.includes('verif') || act.includes('pass'))
+    return { label: 'Accepted', cls: 'verified' }
+  if ((a.tvm_status || '').startsWith('pending'))
+    return { label: 'Pending', cls: 'pending_authority_review' }
+  return null
+}
+
 export default function AlertsPage() {
   const [alerts, setAlerts] = useState(null)
   const [error, setError] = useState(null)
@@ -19,6 +31,7 @@ export default function AlertsPage() {
     const params = Object.fromEntries(
       Object.entries(filters).filter(([, v]) => v !== '')
     )
+    params.limit = 500 // show all incidents, including rejected & duplicates
     getAlerts(params).then((r) => setAlerts(r.data)).catch((e) =>
       setError(e.response?.data?.detail || 'Failed to load alerts'))
   }
@@ -84,6 +97,7 @@ export default function AlertsPage() {
                 <th>Severity</th>
                 <th>Status</th>
                 <th>TVM</th>
+                <th>Review / Reason</th>
                 <th>District</th>
                 <th>Reporter</th>
                 <th>Created</th>
@@ -118,6 +132,26 @@ export default function AlertsPage() {
                   <td><span className={`badge ${a.severity}`}>{a.severity}</span></td>
                   <td><span className={`badge ${a.status}`}>{a.status}</span></td>
                   <td><span className={`badge ${a.tvm_status}`}>{a.tvm_status}</span></td>
+                  <td style={{ maxWidth: 260 }}>
+                    {(() => {
+                      const o = reviewOutcome(a)
+                      if (!o && !a.review_notes) return <span className="muted">—</span>
+                      return (
+                        <>
+                          {o && <span className={`badge ${o.cls}`}>{o.label}</span>}
+                          {a.review_notes && (
+                            <div className="desc" style={{ marginTop: 4 }}>{a.review_notes}</div>
+                          )}
+                          {(a.reviewer_name || a.reviewed_at) && (
+                            <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>
+                              {a.reviewer_name || 'Automated TVM'}
+                              {a.reviewed_at && ` · ${new Date(a.reviewed_at).toLocaleDateString()}`}
+                            </div>
+                          )}
+                        </>
+                      )
+                    })()}
+                  </td>
                   <td>{a.district || '—'}</td>
                   <td>{a.reporter_name || '—'}</td>
                   <td>{new Date(a.created_at).toLocaleDateString()}</td>

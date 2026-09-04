@@ -9,9 +9,11 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
 import ReviewQueuePage from './pages/ReviewQueuePage'
+import ReviewedAlertsPage from './pages/ReviewedAlertsPage'
 import AlertsPage from './pages/AlertsPage'
 import HeatmapPage from './pages/HeatmapPage'
 import TvmLogPage from './pages/TvmLogPage'
+import TvmMechanismPage from './pages/TvmMechanismPage'
 import RegistrationsPage from './pages/RegistrationsPage'
 
 function RequireAuth({ children }) {
@@ -27,8 +29,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route element={<RequireAuth><Layout /></RequireAuth>}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/review" element={<ReviewQueuePage />} />
+          <Route path="/reviewed" element={<ReviewedAlertsPage />} />
           <Route path="/alerts" element={<AlertsPage />} />
           <Route path="/heatmap" element={<HeatmapPage />} />
+          <Route path="/tvm-mechanism" element={<TvmMechanismPage />} />
           <Route path="/tvm-log" element={<TvmLogPage />} />
           <Route path="/registrations" element={<RegistrationsPage />} />
         </Route>

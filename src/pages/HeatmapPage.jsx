@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import 'leaflet.heat'
+import 'leaflet.markercluster'
+import 'leaflet.markercluster/dist/MarkerCluster.css'
 import { getAlerts, setAlertArea } from '../api'
 
 // Sri Lanka geographic centre
@@ -55,6 +57,8 @@ export default function HeatmapPage() {
   const [error, setError]             = useState(null)
   const [typeFilter, setTypeFilter]   = useState('')
   const [showMarkers, setShowMarkers] = useState(true)
+  const [placeQuery, setPlaceQuery]     = useState('')
+  const [placeResults, setPlaceResults] = useState([])
   const [showAreas, setShowAreas]     = useState(true)
 
   // Affected-area editor state
@@ -93,14 +97,34 @@ export default function HeatmapPage() {
     })
 
     areasRef.current   = L.layerGroup().addTo(map)
-    markersRef.current = L.layerGroup().addTo(map)
+
+    // Alerts in the same street or district sit on top of each other, so they
+    // are grouped into a numbered bubble. Clicking a bubble zooms in, and once
+    // markers share almost the same point they fan out ("spiderfy") so each
+    // one can still be opened individually.
+    markersRef.current = L.markerClusterGroup({
+      showCoverageOnHover: false,
+      spiderfyOnMaxZoom: true,
+      maxClusterRadius: 45,
+      // Bubble grows and darkens with the number of alerts it hides.
+      iconCreateFunction: (cluster) => {
+        const n = cluster.getChildCount()
+        const size = n < 10 ? 34 : n < 50 ? 42 : 50
+        const tone = n < 10 ? 'sm' : n < 50 ? 'md' : 'lg'
+        return L.divIcon({
+          html: `<div class="ca-cluster ${tone}"><span>${n}</span></div>`,
+          className: 'ca-cluster-wrap',
+          iconSize: L.point(size, size),
+        })
+      },
+    }).addTo(map)
     editRef.current    = L.layerGroup().addTo(map)
     focusRef.current   = L.layerGroup().addTo(map)
 
     // Layer control: switch base map, toggle incident overlays.
     L.control.layers(
       { Street: street, Satellite: satellite, Terrain: terrain, Dark: dark },
-      { 'Affected areas': areasRef.current, 'Alert markers': markersRef.current },
+      { 'Affected areas': areasRef.current, 'Alert markers (grouped)': markersRef.current },
       { position: 'topright', collapsed: false },
     ).addTo(map)
 
@@ -220,6 +244,39 @@ export default function HeatmapPage() {
     }
   }, [alerts, typeFilter, showMarkers, showAreas])
 
+  // ── Place search ─────────────────────────────────────────────────
+  // Nominatim is OpenStreetMap's own geocoder: free, no API key, and it
+  // matches the OSM tiles the map already uses. Searching on submit rather
+  // than per keystroke respects its ~1 request/second usage policy.
+  async function doPlaceSearch(e) {
+    e.preventDefault()
+    const q = placeQuery.trim()
+    if (q.length < 2) return
+    try {
+      const url = 'https://nominatim.openstreetmap.org/search'
+        + `?q=${encodeURIComponent(q)}&countrycodes=lk&format=json&limit=6`
+      const res = await fetch(url, { headers: { Accept: 'application/json' } })
+      const data = await res.json()
+      setPlaceResults(
+        (Array.isArray(data) ? data : []).map((d) => ({
+          name: (d.display_name || '').split(',')[0].trim(),
+          address: d.display_name,
+          lat: parseFloat(d.lat),
+          lon: parseFloat(d.lon),
+        })).filter((d) => !isNaN(d.lat) && !isNaN(d.lon))
+      )
+    } catch {
+      setPlaceResults([])
+    }
+  }
+
+  function goToPlace(p) {
+    setPlaceResults([])
+    setPlaceQuery(p.name)
+    const map = mapRef.current
+    if (map) map.setView([p.lat, p.lon], 13)
+  }
+
   // ── Editor actions ───────────────────────────────────────────────
   // Fly to the chosen alert and drop a pulsing highlight so it stands out.
   function focusAlert(id) {
@@ -290,6 +347,25 @@ export default function HeatmapPage() {
       {error && <div className="empty">{error}</div>}
 
       <div className="filters">
+        {/* Jump the map to a named place (OpenStreetMap's Nominatim geocoder) */}
+        <form onSubmit={doPlaceSearch} style={{ position: 'relative' }}>
+          <input
+            value={placeQuery}
+            onChange={(e) => setPlaceQuery(e.target.value)}
+            placeholder="🔎 Go to a city or place…"
+            style={{ minWidth: 240 }}
+          />
+          {placeResults.length > 0 && (
+            <div className="place-results">
+              {placeResults.map((p, i) => (
+                <button type="button" key={i} onClick={() => goToPlace(p)}>
+                  <strong>{p.name}</strong>
+                  <span>{p.address}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </form>
         <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
           <option value="">All types</option>
           {ALERT_TYPES.map((t) => (

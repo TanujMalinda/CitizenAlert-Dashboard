@@ -55,11 +55,27 @@ export const getPending = () => api.get('/authority/pending').then(r => r.data)
 export const getAlerts  = (params) => api.get('/authority/alerts', { params }).then(r => r.data)
 export const getTvmLog  = (params) => api.get('/authority/tvm-log', { params }).then(r => r.data)
 
+// Accepted / rejected decision history. decision: 'accepted' | 'rejected'
+export const getReviewedAlerts = (params) =>
+  api.get('/authority/reviewed', { params }).then(r => r.data)
+
+// TVM configuration + live pipeline figures (powers the TVM Mechanism page)
+export const getTvmOverview = () =>
+  api.get('/authority/tvm-overview').then(r => r.data)
+
+// Step-by-step scoring walkthrough for one alert
+export const getTvmExplain = (alertId) =>
+  api.get(`/authority/alerts/${alertId}/tvm-explain`).then(r => r.data)
+
 // ── Review actions ────────────────────────────────────────────────
 export function reviewAlert(alertType, alertId, action, notes) {
   // Unified authority review endpoint handles all alert types
   return api.post(`/authority/alerts/${alertId}/review`, { action, notes })
 }
+
+// Overturn a rejection — republishes the alert and records the override.
+export const reinstateAlert = (alertId, notes) =>
+  api.post(`/authority/alerts/${alertId}/reinstate`, { notes }).then(r => r.data)
 
 // Set/clear an alert's CAP-style affected area.
 // payload: { mode: 'polygon'|'line_buffer'|'clear', coordinates: [[lat,lng],...], buffer_m }
